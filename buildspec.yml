@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  secrets-manager:
+    GITHUB_TOKEN: demo/github-pat:GITHUB_TOKEN
+
+phases:
+  install:
+    commands:
+      - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+  pre_build:
+    commands:
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c1-7)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  build:
+    commands:
+      - docker build -t $ECR_URI:$IMAGE_TAG .
+      # Trivy: fail the build on CRITICAL vulnerabilities that have a fix
+      - trivy image --exit-code 1 --severity CRITICAL --ignore-unfixed $ECR_URI:$IMAGE_TAG
+      - docker push $ECR_URI:$IMAGE_TAG
+      # Update the GitOps repo so ArgoCD picks up the new tag
+      - git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/demo-app-argocd.git
+      - cd demo-app-argocd
+      - sed -i "s|image: .*|image: $ECR_URI:$IMAGE_TAG|" k8s/deployment.yaml
+      - git config user.email "codebuild@demo.local"
+      - git config user.name "codebuild"
+      - git commit -am "Update image to $IMAGE_TAG"
+      - git push origin main
