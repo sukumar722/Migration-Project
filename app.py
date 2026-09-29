@@ -6,7 +6,7 @@ VERSION = os.getenv("APP_VERSION", "v1")
 
 @app.route("/")
 def home():
-    return jsonify(message="Hello from demo-app on EKS", version=VERSION)
+    return jsonify(message="Hello from demo-app v2", version=VERSION)
 
 @app.route("/health")
 def health():
