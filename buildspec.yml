@@ -19,9 +19,9 @@ phases:
       - trivy image --exit-code 1 --severity CRITICAL --ignore-unfixed $ECR_URI:$IMAGE_TAG
       - docker push $ECR_URI:$IMAGE_TAG
       # Update the GitOps repo so ArgoCD picks up the new tag
-      - git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/demo-app-argocd.git
+      - git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_USER}/Migration-ArgoCD.git
       - cd demo-app-argocd
-      - sed -i "s|image: .*|image: $ECR_URI:$IMAGE_TAG|" k8s/deployment.yaml
+      - sed -i "s|image: .*|image: $ECR_URI:$IMAGE_TAG|" k8s/deployment.yml
       - git config user.email "codebuild@demo.local"
       - git config user.name "codebuild"
       - git commit -am "Update image to $IMAGE_TAG"
